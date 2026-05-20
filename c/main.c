@@ -13,6 +13,7 @@ static void log_block(struct block_meta *b, const char *event) {
     "\"meta_size\": %d,\n"
     "\"user_addr\": \"%p\",\n"
     "\"size\": %zu,\n"
+    "\"used\": %zu,\n"
     "\"free\": %s,\n"
     "\"next_block\": \"%p\",\n"
     "\"magic\": \"%s\"\n"
@@ -22,6 +23,7 @@ static void log_block(struct block_meta *b, const char *event) {
     META_SIZE,
     (void *)(b + 1),
     b->size,
+    b->used,
     b->free ? "true" : "false",
     (void *)b->next,
     b->magic,

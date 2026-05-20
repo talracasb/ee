@@ -25,6 +25,9 @@ def data() -> list[Block]:
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
+def size(block: Block) -> int:
+    return max(block["size"], 16)
+
 def draw(data: list[Block]):
     margin = 1;
     height = 1;
@@ -34,13 +37,13 @@ def draw(data: list[Block]):
     ax.set_xlim(0, 32 + 2 * margin)
     ax.axis("off")
 
-    total_size = sum(block["size"] for block in data)
+    total_size = sum(size(block) for block in data)
     scale = 32 / total_size
 
     x = margin
     y = margin
     for block in data:
-        width = block["size"] * scale
+        width = size(block) * scale
         ax.add_patch(
             Rectangle((x, y),
                       width,
@@ -49,7 +52,7 @@ def draw(data: list[Block]):
                       edgecolor="black",
                       hatch="//" if block["free"] else ""
                       ))
-        text = f"{block["magic"]}\nsize: {block["size"]}"
+        text = f"{block["magic"]}\nsize: {block["size"]}\nused: {block["used"]}"
         ax.text(x+width / 2, y+height / 2, text, ha="center", va="center", fontsize=10)
 
         x += width

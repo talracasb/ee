@@ -8,6 +8,7 @@ struct block_meta {
   char magic[16];
   bool free;
   size_t size;
+  size_t used;
   struct block_meta *next;
 };
 

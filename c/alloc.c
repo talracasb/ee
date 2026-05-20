@@ -89,7 +89,7 @@ static struct block_meta *find_previous(struct block_meta *block) {
 static void split(struct block_meta *block, size_t size) {
   // If it can't fit both a new block meta, the data it
   // already has, and 8 extra bytes, then don't split.
-  if (block->size < size + META_SIZE + 8) return;
+  if (block->size < size + META_SIZE) return;
 
   // Basically, set the new block to be after both the
   // current block's metadata and size.
@@ -127,6 +127,8 @@ void *custom_malloc(size_t size) {
     block->free = false;
     strcpy(block->magic, "found");
   }
+
+  block->used =size;
 
   return block + 1;
 }
