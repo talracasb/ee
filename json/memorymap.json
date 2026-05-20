@@ -1,22 +1,72 @@
 [
 {
 "event": "info",
-"block_addr": "0x55fe87163000",
+"block_addr": "0x55bffa219000",
 "meta_size": 40,
-"user_addr": "0x55fe87163028",
-"size": 64,
+"user_addr": "0x55bffa219028",
+"size": 24,
 "free": false,
-"next_block": "0x55fe87163068",
+"next_block": "0x55bffa219040",
+"magic": "requested"
+},
+{
+"event": "info",
+"block_addr": "0x55bffa219040",
+"meta_size": 40,
+"user_addr": "0x55bffa219068",
+"size": 16,
+"free": false,
+"next_block": "0x55bffa219078",
 "magic": "found"
 },
 {
 "event": "info",
-"block_addr": "0x55fe87163068",
+"block_addr": "0x55bffa219078",
 "meta_size": 40,
-"user_addr": "0x55fe87163090",
-"size": 960,
-"free": true,
+"user_addr": "0x55bffa2190a0",
+"size": 32,
+"free": false,
+"next_block": "0x55bffa2190c0",
+"magic": "found"
+},
+{
+"event": "info",
+"block_addr": "0x55bffa2190c0",
+"meta_size": 40,
+"user_addr": "0x55bffa2190e8",
+"size": 8,
+"free": false,
+"next_block": "0x55bffa2190f0",
+"magic": "found"
+},
+{
+"event": "info",
+"block_addr": "0x55bffa2190f0",
+"meta_size": 40,
+"user_addr": "0x55bffa219118",
+"size": 40,
+"free": false,
+"next_block": "0x55bffa219140",
+"magic": "requested"
+},
+{
+"event": "info",
+"block_addr": "0x55bffa219140",
+"meta_size": 40,
+"user_addr": "0x55bffa219168",
+"size": 20,
+"free": false,
+"next_block": "0x55bffa21917c",
+"magic": "requested"
+},
+{
+"event": "info",
+"block_addr": "0x55bffa21917c",
+"meta_size": 40,
+"user_addr": "0x55bffa2191a4",
+"size": 10,
+"free": false,
 "next_block": "(nil)",
-"magic": "split"
+"magic": "requested"
 }
 ]

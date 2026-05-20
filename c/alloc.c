@@ -109,10 +109,7 @@ void *custom_malloc(size_t size) {
     if (!block)
       return NULL;
   } else {
-    if (block->size >= size + META_SIZE + 1) {
-      split(block, size);
-    }
-
+    split(block, size);
     block->free = false;
     strcpy(block->magic, "found");
   }
@@ -122,8 +119,7 @@ void *custom_malloc(size_t size) {
 
 // Coalesces surrounding blocks if possible and returns the new, hopefully bigger, block.
 static void coalesce(struct block_meta *block) {
-  if (!block)
-    return;
+  if (!block) return;
 
   // Merge with next block if free
   if (block->next && block->next->free) {
@@ -155,7 +151,7 @@ void custom_free(void *ptr) {
   struct block_meta *block_ptr = get_block_ptr(ptr);
 
   // Just mark it as free.
-  block_ptr->free = 1;
+  block_ptr->free = true;
   strcpy(block_ptr->magic, "freed");
 
   coalesce(block_ptr);

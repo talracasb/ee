@@ -5,11 +5,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) Launch",
+            "name": "Launch",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/c/main",
-            "args": [],
+            "args": ["map"],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],
@@ -27,14 +27,6 @@
                     "ignoreFailures": true
                 }
             ]
-        },
-        {
-            "name": "Launch",
-            "type": "lldb",
-            "request": "launch",
-            "program": "${workspaceRoot}/c/main",
-            "args": [],
-            "cwd": "${workspaceRoot}"
         }
     ]
 }
