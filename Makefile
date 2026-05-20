@@ -1,5 +1,5 @@
 CC      = cc
-CFLAGS  = -std=c11 -Wall -Wextra -O0 -g
+CFLAGS  = -std=c11 -Wall -Wextra -D_DEFAULT_SOURCE -O0 -g
 
 OBJS = alloc.o main.o
 
