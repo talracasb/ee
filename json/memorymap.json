@@ -1,0 +1,22 @@
+[
+{
+"event": "info",
+"block_addr": "0x55fe87163000",
+"meta_size": 40,
+"user_addr": "0x55fe87163028",
+"size": 64,
+"free": false,
+"next_block": "0x55fe87163068",
+"magic": "found"
+},
+{
+"event": "info",
+"block_addr": "0x55fe87163068",
+"meta_size": 40,
+"user_addr": "0x55fe87163090",
+"size": 960,
+"free": true,
+"next_block": "(nil)",
+"magic": "split"
+}
+]

@@ -1,7 +1,7 @@
 CC      = cc
 CFLAGS  = -std=c11 -Wall -Wextra -D_DEFAULT_SOURCE -O0 -g
 
-OBJS = alloc.o main.o
+OBJS = test.o alloc.o main.o
 
 all: main
 
@@ -11,7 +11,10 @@ main: $(OBJS)
 alloc.o: alloc.c alloc.h
 	$(CC) $(CFLAGS) -c alloc.c
 
-main.o: main.c alloc.h
+test.o: test.c test.h
+	$(CC) $(CFLAGS) -c test.c
+
+main.o: main.c alloc.h test.h
 	$(CC) $(CFLAGS) -c main.c
 
 clean:

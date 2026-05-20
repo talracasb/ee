@@ -1,9 +1,9 @@
+#include "alloc.h"
 #include <assert.h>
-#include <string.h>
-#include <sys/types.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include "alloc.h"
+#include <string.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 struct block_meta *base = NULL;
@@ -24,7 +24,7 @@ static struct block_meta *find(struct block_meta **previous, size_t size) {
 }
 
 // Request a new block by extending the heap (sbrk just extends the data segment.)
-static struct block_meta *request(struct block_meta* previous, size_t size) {
+static struct block_meta *request(struct block_meta *previous, size_t size) {
   // Create a new block pointer at the current program break.
   struct block_meta *block = sbrk(0);
 
@@ -34,13 +34,14 @@ static struct block_meta *request(struct block_meta* previous, size_t size) {
   // Makes sure that the block allocated correctly.
   // This is done by ensuring that the address returned by the second `sbrk`
   // call is the same as the previous program break.
-  assert((void*)block == request); // Not thread safe.
-  if (request == (void*)-1) {
+  assert((void *)block == request); // Not thread safe.
+  if (request == (void *)-1) {
     return NULL; // sbrk failed.
   }
 
   // If there was a previous block, then ensure it's correctly added to the linked list.
-  if (previous) previous->next = block;
+  if (previous)
+    previous->next = block;
 
   // Populate the block metadata.
   block->size = size;
@@ -54,14 +55,15 @@ static struct block_meta *request(struct block_meta* previous, size_t size) {
 // Gets the pointer to the start of the block_meta with the pointer to it's data.
 static struct block_meta *get_block_ptr(void *ptr) {
   // Pointer arithmetic in C is based on the type, so this goes back one unit of block_meta.
-  return (struct block_meta*)ptr - 1;
+  return (struct block_meta *)ptr - 1;
 }
 
 // Little helper to find the previous block.
 // In a real allocator, there would be a pointer attached to each block for the sake of performance.
 static struct block_meta *find_previous(struct block_meta *block) {
   struct block_meta *current = base;
-  if (!current || current == block) return NULL;
+  if (!current || current == block)
+    return NULL;
 
   while (current && current->next != block) {
     current = current->next;
@@ -70,12 +72,31 @@ static struct block_meta *find_previous(struct block_meta *block) {
   return current;
 }
 
-void *malloc(size_t size) {
-  if (size <= 0) return NULL;
+// Split the block by cutting it down to a certain size,
+// and then creating a new block right afterwards.
+static void split(struct block_meta *block, size_t size) {
+  // If it can't fit both a new block meta, the data it already has, and 8 extra bytes, then don't split.
+  if (block->size < size + META_SIZE + 8) return;
+
+  // Basically, set the new block to be after both the current block's metadata and size.
+  struct block_meta *new = (struct block_meta *)((char *)(block + 1) + size);
+  new->free = true;
+  new->size = block->size - size;
+  new->next = block->next;
+  strcpy(new->magic, "split");
+
+  block->size = size;
+  block->next = new;
+}
+
+void *custom_malloc(size_t size) {
+  if (size <= 0)
+    return NULL;
 
   if (!base) { // First call, we need to allocate a block at the base.
     base = request(NULL, size);
-    if (!base) return NULL;
+    if (!base)
+      return NULL;
     return base + 1;
   }
 
@@ -85,9 +106,13 @@ void *malloc(size_t size) {
   struct block_meta *block = find(&previous, size);
   if (!block) { // Failed to find free block.
     block = request(previous, size);
-    if (!block) return NULL;
+    if (!block)
+      return NULL;
   } else {
-    // TODO: consider splitting block here.
+    if (block->size >= size + META_SIZE + 1) {
+      split(block, size);
+    }
+
     block->free = false;
     strcpy(block->magic, "found");
   }
@@ -96,8 +121,9 @@ void *malloc(size_t size) {
 }
 
 // Coalesces surrounding blocks if possible and returns the new, hopefully bigger, block.
-static struct block_meta* coalesce(struct block_meta *block) {
-  if (!block) return NULL;
+static void coalesce(struct block_meta *block) {
+  if (!block)
+    return;
 
   // Merge with next block if free
   if (block->next && block->next->free) {
@@ -118,16 +144,15 @@ static struct block_meta* coalesce(struct block_meta *block) {
     strcpy(prev->magic, "merged_prev");
     block = prev;
   }
-
-  return block;
 }
 
-void free(void *ptr) {
+void custom_free(void *ptr) {
   // Don't do anything on freeing NULL.
-  if (!ptr) return;
+  if (!ptr)
+    return;
 
   // Get the block pointer.
-  struct block_meta* block_ptr = get_block_ptr(ptr);
+  struct block_meta *block_ptr = get_block_ptr(ptr);
 
   // Just mark it as free.
   block_ptr->free = 1;
