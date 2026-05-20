@@ -1,72 +1,102 @@
 [
 {
 "event": "info",
-"block_addr": "0x55bffa219000",
+"block_addr": "0x55ccddbc6000",
 "meta_size": 40,
-"user_addr": "0x55bffa219028",
-"size": 24,
+"user_addr": "0x55ccddbc6028",
+"size": 14,
 "free": false,
-"next_block": "0x55bffa219040",
-"magic": "requested"
+"next_block": "0x55ccddbc6036",
+"magic": "found"
 },
 {
 "event": "info",
-"block_addr": "0x55bffa219040",
+"block_addr": "0x55ccddbc6036",
 "meta_size": 40,
-"user_addr": "0x55bffa219068",
+"user_addr": "0x55ccddbc605e",
 "size": 16,
 "free": false,
-"next_block": "0x55bffa219078",
+"next_block": "0x55ccddbc606e",
 "magic": "found"
 },
 {
 "event": "info",
-"block_addr": "0x55bffa219078",
+"block_addr": "0x55ccddbc606e",
 "meta_size": 40,
-"user_addr": "0x55bffa2190a0",
-"size": 32,
+"user_addr": "0x55ccddbc6096",
+"size": 36,
 "free": false,
-"next_block": "0x55bffa2190c0",
+"next_block": "0x55ccddbc60ba",
 "magic": "found"
 },
 {
 "event": "info",
-"block_addr": "0x55bffa2190c0",
+"block_addr": "0x55ccddbc60ba",
 "meta_size": 40,
-"user_addr": "0x55bffa2190e8",
-"size": 8,
-"free": false,
-"next_block": "0x55bffa2190f0",
-"magic": "found"
-},
-{
-"event": "info",
-"block_addr": "0x55bffa2190f0",
-"meta_size": 40,
-"user_addr": "0x55bffa219118",
-"size": 40,
-"free": false,
-"next_block": "0x55bffa219140",
-"magic": "requested"
-},
-{
-"event": "info",
-"block_addr": "0x55bffa219140",
-"meta_size": 40,
-"user_addr": "0x55bffa219168",
+"user_addr": "0x55ccddbc60e2",
 "size": 20,
 "free": false,
-"next_block": "0x55bffa21917c",
-"magic": "requested"
+"next_block": "0x55ccddbc60f6",
+"magic": "found"
 },
 {
 "event": "info",
-"block_addr": "0x55bffa21917c",
+"block_addr": "0x55ccddbc60f6",
 "meta_size": 40,
-"user_addr": "0x55bffa2191a4",
-"size": 10,
+"user_addr": "0x55ccddbc611e",
+"size": 11,
 "free": false,
+"next_block": "0x55ccddbc6129",
+"magic": "found"
+},
+{
+"event": "info",
+"block_addr": "0x55ccddbc6129",
+"meta_size": 40,
+"user_addr": "0x55ccddbc6151",
+"size": 43,
+"free": false,
+"next_block": "0x55ccddbc617c",
+"magic": "found"
+},
+{
+"event": "info",
+"block_addr": "0x55ccddbc617c",
+"meta_size": 40,
+"user_addr": "0x55ccddbc61a4",
+"size": 19,
+"free": false,
+"next_block": "0x55ccddbc61b7",
+"magic": "found"
+},
+{
+"event": "info",
+"block_addr": "0x55ccddbc61b7",
+"meta_size": 40,
+"user_addr": "0x55ccddbc61df",
+"size": 12,
+"free": false,
+"next_block": "0x55ccddbc61eb",
+"magic": "found"
+},
+{
+"event": "info",
+"block_addr": "0x55ccddbc61eb",
+"meta_size": 40,
+"user_addr": "0x55ccddbc6213",
+"size": 8,
+"free": false,
+"next_block": "0x55ccddbc621b",
+"magic": "found"
+},
+{
+"event": "info",
+"block_addr": "0x55ccddbc621b",
+"meta_size": 40,
+"user_addr": "0x55ccddbc6243",
+"size": 24,
+"free": true,
 "next_block": "(nil)",
-"magic": "requested"
+"magic": "split"
 }
 ]

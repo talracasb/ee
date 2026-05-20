@@ -8,19 +8,21 @@
 
 struct block_meta *base = NULL;
 
-// Function which actually finds a free block.
-static struct block_meta *find(struct block_meta **previous, size_t size) {
-  struct block_meta *current = base;
+static struct block_meta *find(struct block_meta **out_prev, size_t size) {
+  struct block_meta *prev = NULL;
+  struct block_meta *cur = base;
 
-  // First-fit allocation. It goes through each block meta,
-  // and then returns when it finds a block that's big enough.
-  while (current && !(current->free && current->size >= size)) {
-    // log_block(current, "loop iteration to find");
-    *previous = current;
-    current = current->next;
+  while (cur) {
+    if (cur->free && cur->size >= size) {
+      *out_prev = prev;
+      return cur;
+    }
+    prev = cur;
+    cur = cur->next;
   }
 
-  return current;
+  *out_prev = prev;
+  return NULL;
 }
 
 // Request a new block by extending the heap (sbrk just extends the data segment.)
@@ -72,16 +74,15 @@ static struct block_meta *find_previous(struct block_meta *block) {
   return current;
 }
 
-// Split the block by cutting it down to a certain size,
-// and then creating a new block right afterwards.
 static void split(struct block_meta *block, size_t size) {
-  // If it can't fit both a new block meta, the data it already has, and 8 extra bytes, then don't split.
-  if (block->size < size + META_SIZE + 8) return;
+  if (block->size < size + META_SIZE + 8)
+    return;
 
-  // Basically, set the new block to be after both the current block's metadata and size.
-  struct block_meta *new = (struct block_meta *)((char *)(block + 1) + size);
+  struct block_meta *new =
+      (struct block_meta *)((char *)(block + 1) + size);
+
+  new->size = block->size - size - META_SIZE;
   new->free = true;
-  new->size = block->size - size;
   new->next = block->next;
   strcpy(new->magic, "split");
 
@@ -90,55 +91,63 @@ static void split(struct block_meta *block, size_t size) {
 }
 
 void *custom_malloc(size_t size) {
-  if (size <= 0)
+  if (size == 0) // First call, we need to allocate a block at the base.
     return NULL;
 
-  if (!base) { // First call, we need to allocate a block at the base.
+  struct block_meta *prev = NULL;
+
+  if (!base) {
     base = request(NULL, size);
-    if (!base)
-      return NULL;
+    if (!base) return NULL;
     return base + 1;
   }
 
-  struct block_meta *previous = base;
+  struct block_meta *block = find(&prev, size);
 
-  // Find a new block.
-  struct block_meta *block = find(&previous, size);
-  if (!block) { // Failed to find free block.
-    block = request(previous, size);
-    if (!block)
-      return NULL;
+  if (!block) {
+    block = request(prev, size);
+    if (!block) return NULL;
   } else {
     split(block, size);
     block->free = false;
     strcpy(block->magic, "found");
   }
 
-  return (block + 1);
+  return block + 1;
 }
 
 // Coalesces surrounding blocks if possible and returns the new, hopefully bigger, block.
 static void coalesce(struct block_meta *block) {
   if (!block) return;
 
-  // Merge with next block if free
-  if (block->next && block->next->free) {
-    struct block_meta *next = block->next;
+  bool merged = true;
+  while (merged) {
+    merged = 0;
 
-    block->size += META_SIZE + next->size;
-    block->next = next->next;
+    // Merge with next block if free
+    if (block->next && block->next->free) {
+      struct block_meta *next = block->next;
 
-    strcpy(block->magic, "merged_next");
-  }
+      // Adjacency check
+      if ((char *)(block + 1) + block->size == (char *)next) {
+        block->size += META_SIZE + next->size;
+        block->next = next->next;
+        strcpy(block->magic, "merged_next");
+        merged = 1;
+      }
+    }
 
-  // Merge with previous block if free
-  struct block_meta *prev = find_previous(block);
-  if (prev && prev->free) {
-    prev->size += META_SIZE + block->size;
-    prev->next = block->next;
-
-    strcpy(prev->magic, "merged_prev");
-    block = prev;
+    // Merge with previous block if free
+    struct block_meta *prev = find_previous(block);
+    if (prev && prev->free) {
+      if ((char *)(prev + 1) + prev->size == (char *)block) {
+        prev->size += META_SIZE + block->size;
+        prev->next = block->next;
+        strcpy(prev->magic, "merged_prev");
+        block = prev;
+        merged = 1;
+      }
+    }
   }
 }
 
