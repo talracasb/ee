@@ -2,8 +2,7 @@
 
 void *p[32];
 
-void test(void)
-{
+void test(void) {
   // Phase 1: seed fragmentation
   p[0] = custom_malloc(24);
   p[1] = custom_malloc(16);

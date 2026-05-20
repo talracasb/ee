@@ -14,7 +14,8 @@ struct block_meta {
 #define META_SIZE sizeof(struct block_meta)
 extern struct block_meta *base;
 
-// The basic allocator API. There's more, but it's just convenience.
+// The basic allocator API. There's more, but it's just
+// convenience.
 
 void *custom_malloc(size_t size);
 void custom_free(void *ptr);

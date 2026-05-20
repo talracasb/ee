@@ -1,8 +1,10 @@
 BasedOnStyle: LLVM
 IndentWidth: 2
-BreakBeforeBraces: Attach
-ColumnLimit: 0
+ContinuationIndentWidth: 2
+UseTab: Never
 AllowAllConstructorInitializersOnNextLine: false
 BinPackParameters: false
 BinPackArguments: false
 Cpp11BracedListStyle: true
+AllowShortIfStatementsOnASingleLine: true
+AllowShortBlocksOnASingleLine: true
