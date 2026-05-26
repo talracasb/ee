@@ -9,52 +9,32 @@
 struct block_meta *base = NULL;
 
 // Function which actually finds a free block.
-// static struct block_meta *find(struct block_meta **out_prev, size_t size) {
-//   struct block_meta *prev = NULL;
-//   struct block_meta *cur = base;
+static struct block_meta *first_find(size_t size) {
+  struct block_meta *current = base;
 
-//   while (cur) {
-//     fprintf(stderr, "iterate: %p, size=%zu, free=%d\n", cur, cur ? cur->size : 0, cur->free);
-
-//     // First-fit allocation. It goes through each block
-//     // meta, and then returns when it finds a block that's
-//     // big enough.
-//     if (cur->free && cur->size >= size) {
-//       *out_prev = prev;
-//       printf("chosen: %p size=%zu\n", cur, cur ? cur->size : 0);
-//       return cur;
-//     }
-
-//     prev = cur;
-//     cur = cur->next;
-//   }
-
-//   *out_prev = prev;
-//   return NULL;
-// }
-
-static struct block_meta *find(struct block_meta **out_prev, size_t size) {
-  struct block_meta *prev = NULL;
-  struct block_meta *cur = base;
-
-  struct block_meta *best = NULL;
-  struct block_meta *best_prev = NULL;
-
-  while (cur) {
-    fprintf(stderr, "iterate: %p, size=%zu, free=%d\n", cur, cur ? cur->size : 0, cur->free);
-    if (cur->free && cur->size >= size) {
-      if (best == NULL || cur->size < best->size) {
-        best = cur;
-        best_prev = prev;
-      }
-    }
-
-    prev = cur;
-    cur = cur->next;
+  while (current) {
+    // First-fit allocation. It goes through each block
+    // meta, and then returns when it finds a block that's
+    // big enough.
+    if (current->free && current->size >= size) return current;
+    current = current->next;
   }
 
-  *out_prev = best_prev;
-  fprintf(stderr, "chosen: %p size=%zu\n", best, best ? best->size : 0);
+  return NULL;
+}
+
+static struct block_meta *best_find(size_t size) {
+  struct block_meta *current = base;
+  struct block_meta *best = NULL;
+
+  while (current) {
+    if (current->free && current->size >= size) {
+      if (best == NULL || current->size < best->size) best = current;
+    }
+
+    current = current->next;
+  }
+
   return best;
 }
 
@@ -103,7 +83,7 @@ static struct block_meta *get_block_ptr(void *ptr) {
 // each block for the sake of performance.
 static struct block_meta *find_previous(struct block_meta *block) {
   struct block_meta *current = base;
-  if (!current || current == block) return NULL;
+  if (current == block) return current;
 
   while (current && current->next != block) {
     current = current->next;
@@ -138,8 +118,6 @@ void *custom_malloc(size_t size) {
   if (size == 0) return NULL;
   size = ALIGN(size);
 
-  struct block_meta *prev = NULL;
-
   // First call, we need to allocate a block at the base.
   if (!base) {
     base = request(NULL, size);
@@ -149,7 +127,8 @@ void *custom_malloc(size_t size) {
     return base + 1;
   }
 
-  struct block_meta *block = find(&prev, size);
+  struct block_meta *block = best_find(size);
+  struct block_meta *prev = find_previous(block);
 
   // Find a new block.
   if (!block) {
@@ -163,7 +142,7 @@ void *custom_malloc(size_t size) {
     strcpy(block->magic, "found");
   }
 
-  block->used =size;
+  block->used = size;
 
   return block + 1;
 }

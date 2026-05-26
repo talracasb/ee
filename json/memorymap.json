@@ -1,13 +1,90 @@
 [
 {
 "event": "info",
-"block_addr": "0x100ccc000",
+"block_addr": "0x555c5d13c000",
 "meta_size": 48,
-"user_addr": "0x100ccc030",
+"user_addr": "0x555c5d13c030",
 "size": 24,
 "used": 24,
 "free": false,
-"next_block": "0x0",
+"next_block": "0x555c5d13c048",
+"magic": "requested"
+},
+{
+"event": "info",
+"block_addr": "0x555c5d13c048",
+"meta_size": 48,
+"user_addr": "0x555c5d13c078",
+"size": 24,
+"used": 24,
+"free": false,
+"next_block": "0x555c5d13c090",
+"magic": "requested"
+},
+{
+"event": "info",
+"block_addr": "0x555c5d13c090",
+"meta_size": 48,
+"user_addr": "0x555c5d13c0c0",
+"size": 24,
+"used": 24,
+"free": false,
+"next_block": "0x555c5d13c0d8",
+"magic": "requested"
+},
+{
+"event": "info",
+"block_addr": "0x555c5d13c0d8",
+"meta_size": 48,
+"user_addr": "0x555c5d13c108",
+"size": 24,
+"used": 24,
+"free": false,
+"next_block": "0x555c5d13c120",
+"magic": "requested"
+},
+{
+"event": "info",
+"block_addr": "0x555c5d13c120",
+"meta_size": 48,
+"user_addr": "0x555c5d13c150",
+"size": 24,
+"used": 24,
+"free": false,
+"next_block": "0x555c5d13c168",
+"magic": "requested"
+},
+{
+"event": "info",
+"block_addr": "0x555c5d13c168",
+"meta_size": 48,
+"user_addr": "0x555c5d13c198",
+"size": 24,
+"used": 24,
+"free": false,
+"next_block": "0x555c5d13c1b0",
+"magic": "requested"
+},
+{
+"event": "info",
+"block_addr": "0x555c5d13c1b0",
+"meta_size": 48,
+"user_addr": "0x555c5d13c1e0",
+"size": 24,
+"used": 24,
+"free": false,
+"next_block": "0x555c5d13c1f8",
+"magic": "requested"
+},
+{
+"event": "info",
+"block_addr": "0x555c5d13c1f8",
+"meta_size": 48,
+"user_addr": "0x555c5d13c228",
+"size": 24,
+"used": 24,
+"free": false,
+"next_block": "(nil)",
 "magic": "requested"
 }
 ]
