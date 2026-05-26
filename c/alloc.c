@@ -9,25 +9,53 @@
 struct block_meta *base = NULL;
 
 // Function which actually finds a free block.
+// static struct block_meta *find(struct block_meta **out_prev, size_t size) {
+//   struct block_meta *prev = NULL;
+//   struct block_meta *cur = base;
+
+//   while (cur) {
+//     fprintf(stderr, "iterate: %p, size=%zu, free=%d\n", cur, cur ? cur->size : 0, cur->free);
+
+//     // First-fit allocation. It goes through each block
+//     // meta, and then returns when it finds a block that's
+//     // big enough.
+//     if (cur->free && cur->size >= size) {
+//       *out_prev = prev;
+//       printf("chosen: %p size=%zu\n", cur, cur ? cur->size : 0);
+//       return cur;
+//     }
+
+//     prev = cur;
+//     cur = cur->next;
+//   }
+
+//   *out_prev = prev;
+//   return NULL;
+// }
+
 static struct block_meta *find(struct block_meta **out_prev, size_t size) {
   struct block_meta *prev = NULL;
   struct block_meta *cur = base;
 
+  struct block_meta *best = NULL;
+  struct block_meta *best_prev = NULL;
+
   while (cur) {
-    // First-fit allocation. It goes through each block
-    // meta, and then returns when it finds a block that's
-    // big enough.
+    fprintf(stderr, "iterate: %p, size=%zu, free=%d\n", cur, cur ? cur->size : 0, cur->free);
     if (cur->free && cur->size >= size) {
-      *out_prev = prev;
-      return cur;
+      if (best == NULL || cur->size < best->size) {
+        best = cur;
+        best_prev = prev;
+      }
     }
 
     prev = cur;
     cur = cur->next;
   }
 
-  *out_prev = prev;
-  return NULL;
+  *out_prev = best_prev;
+  fprintf(stderr, "chosen: %p size=%zu\n", best, best ? best->size : 0);
+  return best;
 }
 
 // Request a new block by extending the heap (sbrk just
@@ -87,9 +115,11 @@ static struct block_meta *find_previous(struct block_meta *block) {
 // Split the block by cutting it down to a certain size,
 // and then creating a new block right afterwards.
 static void split(struct block_meta *block, size_t size) {
+  size = ALIGN(size);
+
   // If it can't fit both a new block meta, the data it
-  // already has, and 8 extra bytes, then don't split.
-  if (block->size < size + META_SIZE) return;
+  // already has, and some alignment then don't split it.
+  if (block->size < size + META_SIZE + ALIGNMENT) return;
 
   // Basically, set the new block to be after both the
   // current block's metadata and size.
@@ -106,6 +136,7 @@ static void split(struct block_meta *block, size_t size) {
 
 void *custom_malloc(size_t size) {
   if (size == 0) return NULL;
+  size = ALIGN(size);
 
   struct block_meta *prev = NULL;
 
@@ -113,6 +144,8 @@ void *custom_malloc(size_t size) {
   if (!base) {
     base = request(NULL, size);
     if (!base) return NULL;
+
+    base->used = size;
     return base + 1;
   }
 
@@ -120,9 +153,11 @@ void *custom_malloc(size_t size) {
 
   // Find a new block.
   if (!block) {
+    fprintf(stderr, "finding new block\n");
     block = request(prev, size);
     if (!block) return NULL;
   } else {
+    // Try splitting off the found block to save it's excess space.
     split(block, size);
     block->free = false;
     strcpy(block->magic, "found");

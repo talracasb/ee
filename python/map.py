@@ -16,8 +16,9 @@ class Block(TypedDict):
     free: bool
     next_block: str
     magic: str
+    used: str
 
-def data() -> list[Block]:
+def read() -> list[Block]:
     if len(sys.argv) < 2:
         raise SystemExit("usage: python map.py <file.json>")
 
@@ -26,7 +27,7 @@ def data() -> list[Block]:
         return json.load(f)
 
 def size(block: Block) -> int:
-    return max(block["size"], 16)
+    return max(block["size"], 20)
 
 def draw(data: list[Block]):
     margin = 1;
@@ -52,8 +53,10 @@ def draw(data: list[Block]):
                       edgecolor="black",
                       hatch="//" if block["free"] else ""
                       ))
-        text = f"{block["magic"]}\nsize: {block["size"]}\nused: {block["used"]}"
-        ax.text(x+width / 2, y+height / 2, text, ha="center", va="center", fontsize=10)
+        
+        used = f"\nused: {block["used"]}"
+        text = f"{block["magic"]}\nsize: {block["size"]}{used if not block["free"] else ""}\n"
+        ax.text(x+width / 2, y+height / 2, text, ha="center", va="center", fontsize=6)
 
         x += width
 
@@ -62,4 +65,15 @@ def draw(data: list[Block]):
 
 
 if __name__ == "__main__":
-    draw(data())
+    data = read()
+    draw(data)
+
+    fragmentation = 0
+    total = 0
+    for block in data:
+        if not block["free"]:
+            fragmentation += block["size"] - block["used"]
+
+        total += block["size"]
+    
+    print(f"Fragmentation: {fragmentation}/{total}, {fragmentation/total * 100}%")
