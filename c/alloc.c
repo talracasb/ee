@@ -83,7 +83,7 @@ static struct block_meta *get_block_ptr(void *ptr) {
 // each block for the sake of performance.
 static struct block_meta *find_previous(struct block_meta *block) {
   struct block_meta *current = base;
-  if (current == block) return current;
+  if (!current || current == block) return NULL;
 
   while (current && current->next != block) {
     current = current->next;
@@ -127,12 +127,12 @@ void *custom_malloc(size_t size) {
     return base + 1;
   }
 
-  struct block_meta *block = best_find(size);
+  struct block_meta *block = first_find(size);
   struct block_meta *prev = find_previous(block);
+  if (!prev) prev = base;
 
   // Find a new block.
   if (!block) {
-    fprintf(stderr, "finding new block\n");
     block = request(prev, size);
     if (!block) return NULL;
   } else {

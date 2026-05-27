@@ -1,142 +1,183 @@
 #include "alloc.h"
 
-void *p[80];
+#include <stdint.h>
+#include <stddef.h>
+
+#define INITIAL_BLOCKS 120
+#define SMALL_BLOCKS   80
+#define MEDIUM_BLOCKS  40
+#define FINAL_BLOCKS   24
+
+static void *p[512];
+
+static uint32_t seed = 0xCAFEBABE;
+
+static uint32_t rng(void)
+{
+    seed ^= seed << 13;
+    seed ^= seed >> 17;
+    seed ^= seed << 5;
+    return seed;
+}
+
+static size_t rsize(size_t min, size_t max)
+{
+    return min + (rng() % (max - min + 1));
+}
 
 void test(void)
 {
-    // Phase 1: full dense packing (establish contiguous baseline)
-    p[0]  = custom_malloc(24);
-    p[1]  = custom_malloc(24);
-    p[2]  = custom_malloc(24);
-    p[3]  = custom_malloc(24);
-    p[4]  = custom_malloc(24);
-    p[5]  = custom_malloc(24);
-    p[6]  = custom_malloc(24);
-    p[7]  = custom_malloc(24);
+    // ============================================================
+    // PHASE 1
+    //
+    // Create a large uniform heap region.
+    //
+    // This gives both allocators the same clean baseline.
+    // ============================================================
 
-    // Phase 2: carve small holes everywhere (critical for first-fit degradation)
-    // custom_free(p[1]);
-    // custom_free(p[3]);
-    // custom_free(p[5]);
-    // custom_free(p[7]);
+    for (int i = 0; i < INITIAL_BLOCKS; i++) {
+        p[i] = custom_malloc(rsize(48, 64));
+    }
 
-    // p[8]  = custom_malloc(8);
-    // p[9]  = custom_malloc(8);
-    // p[10] = custom_malloc(8);
-    // p[11] = custom_malloc(8);
+    // ============================================================
+    // PHASE 2
+    //
+    // Free alternating blocks.
+    //
+    // Produces many medium-sized holes.
+    // ============================================================
 
-    // // Phase 3: interleave live blocks so coalescing is blocked
-    // custom_free(p[0]);
-    // custom_free(p[2]);
+    for (int i = 0; i < INITIAL_BLOCKS; i += 2) {
+        custom_free(p[i]);
+        p[i] = NULL;
+    }
 
-    // p[12] = custom_malloc(20);   // forces skip over small holes
-    // p[13] = custom_malloc(18);
+    // ============================================================
+    // PHASE 3
+    //
+    // Fill medium holes with smaller allocations.
+    //
+    // FIRST-FIT:
+    //   destroys early holes aggressively.
+    //
+    // BEST-FIT:
+    //   packs tighter into better matches.
+    //
+    // This phase creates split tails.
+    // ============================================================
 
-    // // Phase 4: fragmentation explosion (alternate free/live pattern)
-    // custom_free(p[4]);
-    // custom_free(p[6]);
+    for (int i = INITIAL_BLOCKS;
+         i < INITIAL_BLOCKS + SMALL_BLOCKS;
+         i++)
+    {
+        p[i] = custom_malloc(rsize(12, 20));
+    }
 
-    // p[14] = custom_malloc(10);
-    // p[15] = custom_malloc(14);
-    // p[16] = custom_malloc(6);
+    // ============================================================
+    // PHASE 4
+    //
+    // Randomly free some of the small allocations.
+    //
+    // Creates tiny scattered holes embedded inside larger
+    // fragmented regions.
+    // ============================================================
 
-    // custom_free(p[8]);
-    // custom_free(p[10]);
+    for (int i = INITIAL_BLOCKS;
+         i < INITIAL_BLOCKS + SMALL_BLOCKS;
+         i++)
+    {
+        if ((rng() % 100) < 45) {
+            custom_free(p[i]);
+            p[i] = NULL;
+        }
+    }
 
-    // p[17] = custom_malloc(22);
-    // p[18] = custom_malloc(12);
+    // ============================================================
+    // PHASE 5
+    //
+    // Allocate medium blocks which do NOT fit into many
+    // fragmented leftovers.
+    //
+    // Critical difference:
+    //
+    // FIRST-FIT:
+    //   burns through larger surviving regions near front.
+    //
+    // BEST-FIT:
+    //   preserves large regions longer.
+    // ============================================================
 
-    // // Phase 5: create many “almost usable” holes (worst for first-fit)
-    // custom_free(p[9]);
-    // custom_free(p[11]);
-    // custom_free(p[12]);
+    for (int i = INITIAL_BLOCKS + SMALL_BLOCKS;
+         i < INITIAL_BLOCKS + SMALL_BLOCKS + MEDIUM_BLOCKS;
+         i++)
+    {
+        p[i] = custom_malloc(rsize(26, 40));
+    }
 
-    // p[19] = custom_malloc(7);
-    // p[20] = custom_malloc(9);
-    // p[21] = custom_malloc(11);
-    // p[22] = custom_malloc(13);
+    // ============================================================
+    // PHASE 6
+    //
+    // Strategic freeing pattern.
+    //
+    // Leaves isolated "almost useful" holes everywhere.
+    //
+    // This is where first-fit really collapses.
+    // ============================================================
 
-    // // Phase 6: prevent consolidation by keeping separators alive
-    // p[23] = custom_malloc(6);
-    // p[24] = custom_malloc(6);
-    // p[25] = custom_malloc(6);
+    for (int i = 1;
+         i < INITIAL_BLOCKS + SMALL_BLOCKS + MEDIUM_BLOCKS;
+         i += 3)
+    {
+        if (p[i]) {
+            custom_free(p[i]);
+            p[i] = NULL;
+        }
+    }
 
-    // custom_free(p[13]);
-    // custom_free(p[14]);
+    // ============================================================
+    // PHASE 7
+    //
+    // Allocate many awkward sizes.
+    //
+    // These produce maximal split leftovers.
+    // ============================================================
 
-    // p[26] = custom_malloc(16);
-    // p[27] = custom_malloc(18);
+    for (int i = 0; i < FINAL_BLOCKS; i++) {
+        p[300 + i] = custom_malloc(rsize(17, 29));
+    }
 
-    // // Phase 7: create long fragmented prefix (classic first-fit failure mode)
-    // custom_free(p[15]);
-    // custom_free(p[16]);
-    // custom_free(p[17]);
+    // ============================================================
+    // PHASE 8
+    //
+    // FINAL SHAPING PASS
+    //
+    // This determines the FINAL HEAP STATE ONLY.
+    //
+    // We intentionally leave:
+    //
+    // - stranded tiny holes
+    // - fragmented front region
+    // - isolated unusable gaps
+    // - interleaved live/free blocks
+    //
+    // FIRST-FIT ends with:
+    //   massive checkerboarding near heap front.
+    //
+    // BEST-FIT ends with:
+    //   visibly denser packing and larger contiguous holes.
+    // ============================================================
 
-    // p[28] = custom_malloc(8);
-    // p[29] = custom_malloc(8);
-    // p[30] = custom_malloc(8);
+    for (int i = 300; i < 300 + FINAL_BLOCKS; i += 4) {
+        custom_free(p[i]);
+        p[i] = NULL;
+    }
 
-    // custom_free(p[18]);
-    // custom_free(p[19]);
+    for (int i = 20; i < 80; i += 5) {
+        if (p[i]) {
+            custom_free(p[i]);
+            p[i] = NULL;
+        }
+    }
 
-    // p[31] = custom_malloc(20);
-    // p[32] = custom_malloc(10);
-
-    // // Phase 8: repeated “skip-heavy” allocations (forces linear scan waste)
-    // custom_free(p[20]);
-    // custom_free(p[21]);
-
-    // p[33] = custom_malloc(19);
-    // p[34] = custom_malloc(17);
-    // p[35] = custom_malloc(15);
-
-    // custom_free(p[22]);
-    // custom_free(p[23]);
-
-    // p[36] = custom_malloc(21);
-    // p[37] = custom_malloc(9);
-
-    // // Phase 9: final fragmentation lock-in (no global coalescing allowed)
-    // custom_free(p[24]);
-    // custom_free(p[25]);
-    // custom_free(p[26]);
-
-    // p[38] = custom_malloc(7);
-    // p[39] = custom_malloc(6);
-    // p[40] = custom_malloc(5);
-
-    // custom_free(p[27]);
-    // custom_free(p[28]);
-
-    // p[41] = custom_malloc(14);
-    // p[42] = custom_malloc(13);
-
-    // custom_free(p[29]);
-    // custom_free(p[30]);
-
-    // p[43] = custom_malloc(12);
-    // p[44] = custom_malloc(11);
-
-    // // Phase 10: deliberate pathological ending state
-    // custom_free(p[31]);
-    // custom_free(p[32]);
-    // custom_free(p[33]);
-
-    // p[45] = custom_malloc(18);
-    // p[46] = custom_malloc(16);
-
-    // custom_free(p[34]);
-    // custom_free(p[35]);
-
-    // p[47] = custom_malloc(10);
-    // p[48] = custom_malloc(8);
-
-    // custom_free(p[36]);
-    // custom_free(p[37]);
-
-    // p[49] = custom_malloc(9);
-    // p[50] = custom_malloc(7);
-
-    // // leave scattered small holes + interspersed live blocks
-    // // intentionally NOT cleaned up
+    // intentionally leave dirty heap
 }

@@ -69,11 +69,16 @@ if __name__ == "__main__":
     draw(data)
 
     fragmentation = 0
+    small_fractions = 0
     total = 0
     for block in data:
         if not block["free"]:
             fragmentation += block["size"] - block["used"]
+        elif block["size"] <= 16:
+            small_fractions += block["size"]
 
         total += block["size"]
     
     print(f"Fragmentation: {fragmentation}/{total}, {fragmentation/total * 100}%")
+    print(f"Small Fragments: {small_fractions}/{total}, {small_fractions/total * 100}%")
+    
