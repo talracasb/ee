@@ -54,9 +54,18 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  if (strcmp(argv[2], "first") == 0) {
+    strategy = FIRST;
+  } else if (strcmp(argv[2], "best") == 0) {
+    strategy = BEST;
+  }
+
   if (strcmp(argv[1], "map") == 0) {
     test();
     log_memory_map();
+  } else if (strcmp(argv[1], "usage") == 0) {
+    printf("used_memory,heap_memory\n");
+    test();
   } else {
     printf("error: please select 'map'\n");
     return 1;

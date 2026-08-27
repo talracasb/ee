@@ -2,7 +2,7 @@
 
 cd c
 make
-./main map > ../json/memorymap.json
+./main map first > ../data/memorymap.json
 echo "rendering image..."
 cd ../python
-python map.py ../json/memorymap.json
+python map.py ../data/memorymap.json

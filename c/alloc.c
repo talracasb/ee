@@ -7,6 +7,9 @@
 #include <unistd.h>
 
 struct block_meta *base = NULL;
+size_t heap_usage = 0;
+size_t used_memory = 0;
+enum Strategy strategy = FIRST;
 
 // Function which actually finds a free block.
 static struct block_meta *first_find(size_t size) {
@@ -38,15 +41,30 @@ static struct block_meta *best_find(size_t size) {
   return best;
 }
 
-// Request a new block by extending the heap (sbrk just
-// extends the data segment.)
+static struct block_meta *find(size_t size) {
+  struct block_meta *block;
+  if (strategy == FIRST) {
+    block = first_find(size);
+  } else {
+    block = best_find(size);
+  }
+
+  return block;
+}
+
+// Log current allocator state as CSV.
+static void log_memory(void) {
+  printf("%zu,%zu\n", used_memory, heap_usage);
+  fflush(stdout);
+}
+
+// Request a new block by extending the heap.
 static struct block_meta *request(struct block_meta *previous, size_t size) {
-  // Create a new block pointer at the current program
-  // break.
   struct block_meta *block = sbrk(0);
+  size_t total = size + META_SIZE;
 
   // Requests the block.
-  void *request = sbrk((size + META_SIZE));
+  void *request = sbrk(total);
 
   // Makes sure that the block allocated correctly.
   // This is done by ensuring that the address returned by
@@ -57,6 +75,7 @@ static struct block_meta *request(struct block_meta *previous, size_t size) {
     return NULL; // sbrk failed.
   }
 
+  heap_usage += total;
   // If there was a previous block, then ensure it's
   // correctly added to the linked list.
   if (previous) previous->next = block;
@@ -71,7 +90,7 @@ static struct block_meta *request(struct block_meta *previous, size_t size) {
 }
 
 // Gets the pointer to the start of the block_meta with the
-// pointer to it's data.
+// pointer to its data.
 static struct block_meta *get_block_ptr(void *ptr) {
   // Pointer arithmetic in C is based on the type, so this
   // goes back one unit of block_meta.
@@ -124,10 +143,13 @@ void *custom_malloc(size_t size) {
     if (!base) return NULL;
 
     base->used = size;
+    used_memory += size;
+    log_memory();
+
     return base + 1;
   }
 
-  struct block_meta *block = first_find(size);
+  struct block_meta *block = find(size);
   struct block_meta *prev = find_previous(block);
   if (!prev) prev = base;
 
@@ -143,6 +165,8 @@ void *custom_malloc(size_t size) {
   }
 
   block->used = size;
+  used_memory += size;
+  log_memory();
 
   return block + 1;
 }
@@ -184,10 +208,13 @@ void custom_free(void *ptr) {
 
   // Get the block pointer.
   struct block_meta *block_ptr = get_block_ptr(ptr);
+  if (block_ptr->free) return;
+  size_t used = block_ptr->used;
+  used_memory -= used;
 
-  // Just mark it as free.
   block_ptr->free = true;
   strcpy(block_ptr->magic, "freed");
 
   coalesce(block_ptr);
+  log_memory();
 }

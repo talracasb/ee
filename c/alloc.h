@@ -18,8 +18,15 @@ struct block_meta {
   struct block_meta *next;
 };
 
-#define META_SIZE ALIGN(sizeof(struct block_meta))
+#define META_SIZE sizeof(struct block_meta)
 extern struct block_meta *base;
+
+enum Strategy {
+  FIRST,
+  BEST,
+};
+
+extern enum Strategy strategy;
 
 // The basic allocator API. There's more, but it's just
 // convenience.

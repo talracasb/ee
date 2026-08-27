@@ -3,12 +3,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define INITIAL_BLOCKS 120
-#define SMALL_BLOCKS   80
-#define MEDIUM_BLOCKS  40
-#define FINAL_BLOCKS   24
+#define SLOTS 128
+#define OPERATIONS 10000
 
-static void *p[512];
+static void *blocks[SLOTS];
 
 static uint32_t seed = 0xCAFEBABE;
 
@@ -20,164 +18,104 @@ static uint32_t rng(void)
     return seed;
 }
 
-static size_t rsize(size_t min, size_t max)
+static size_t random_size(void)
 {
-    return min + (rng() % (max - min + 1));
+    return 8 + (rng() % 2048);
+}
+
+static size_t live_count(void)
+{
+    size_t count = 0;
+
+    for (size_t i = 0; i < SLOTS; i++)
+        if (blocks[i])
+            count++;
+
+    return count;
+}
+
+static size_t random_live_slot(void)
+{
+    size_t count = live_count();
+
+    if (count == 0)
+        return SLOTS;
+
+    size_t target = rng() % count;
+
+    for (size_t i = 0; i < SLOTS; i++) {
+        if (blocks[i]) {
+            if (target == 0)
+                return i;
+            target--;
+        }
+    }
+
+    return SLOTS;
+}
+
+static size_t random_free_slot(void)
+{
+    size_t count = SLOTS - live_count();
+
+    if (count == 0)
+        return SLOTS;
+
+    size_t target = rng() % count;
+
+    for (size_t i = 0; i < SLOTS; i++) {
+        if (!blocks[i]) {
+            if (target == 0)
+                return i;
+            target--;
+        }
+    }
+
+    return SLOTS;
 }
 
 void test(void)
 {
-    // ============================================================
-    // PHASE 1
-    //
-    // Create a large uniform heap region.
-    //
-    // This gives both allocators the same clean baseline.
-    // ============================================================
+    for (size_t i = 0; i < SLOTS; i++)
+        blocks[i] = NULL;
 
-    for (int i = 0; i < INITIAL_BLOCKS; i++) {
-        p[i] = custom_malloc(rsize(48, 64));
-    }
+    for (size_t i = 0; i < OPERATIONS; i++) {
+        size_t live = live_count();
 
-    // ============================================================
-    // PHASE 2
-    //
-    // Free alternating blocks.
-    //
-    // Produces many medium-sized holes.
-    // ============================================================
+        /*
+         * Roughly 60% allocation / 40% freeing.
+         */
+        int allocate;
 
-    for (int i = 0; i < INITIAL_BLOCKS; i += 2) {
-        custom_free(p[i]);
-        p[i] = NULL;
-    }
+        if (live == 0)
+            allocate = 1;
+        else if (live == SLOTS)
+            allocate = 0;
+        else
+            allocate = (rng() % 100) < 60;
 
-    // ============================================================
-    // PHASE 3
-    //
-    // Fill medium holes with smaller allocations.
-    //
-    // FIRST-FIT:
-    //   destroys early holes aggressively.
-    //
-    // BEST-FIT:
-    //   packs tighter into better matches.
-    //
-    // This phase creates split tails.
-    // ============================================================
+        if (allocate) {
+            size_t slot = random_free_slot();
+            size_t size = random_size();
 
-    for (int i = INITIAL_BLOCKS;
-         i < INITIAL_BLOCKS + SMALL_BLOCKS;
-         i++)
-    {
-        p[i] = custom_malloc(rsize(12, 20));
-    }
+            blocks[slot] = custom_malloc(size);
 
-    // ============================================================
-    // PHASE 4
-    //
-    // Randomly free some of the small allocations.
-    //
-    // Creates tiny scattered holes embedded inside larger
-    // fragmented regions.
-    // ============================================================
+            if (!blocks[slot])
+                return;
+        } else {
+            size_t slot = random_live_slot();
 
-    for (int i = INITIAL_BLOCKS;
-         i < INITIAL_BLOCKS + SMALL_BLOCKS;
-         i++)
-    {
-        if ((rng() % 100) < 45) {
-            custom_free(p[i]);
-            p[i] = NULL;
+            if (slot != SLOTS) {
+                custom_free(blocks[slot]);
+                blocks[slot] = NULL;
+            }
         }
     }
 
-    // ============================================================
-    // PHASE 5
-    //
-    // Allocate medium blocks which do NOT fit into many
-    // fragmented leftovers.
-    //
-    // Critical difference:
-    //
-    // FIRST-FIT:
-    //   burns through larger surviving regions near front.
-    //
-    // BEST-FIT:
-    //   preserves large regions longer.
-    // ============================================================
-
-    for (int i = INITIAL_BLOCKS + SMALL_BLOCKS;
-         i < INITIAL_BLOCKS + SMALL_BLOCKS + MEDIUM_BLOCKS;
-         i++)
-    {
-        p[i] = custom_malloc(rsize(26, 40));
-    }
-
-    // ============================================================
-    // PHASE 6
-    //
-    // Strategic freeing pattern.
-    //
-    // Leaves isolated "almost useful" holes everywhere.
-    //
-    // This is where first-fit really collapses.
-    // ============================================================
-
-    for (int i = 1;
-         i < INITIAL_BLOCKS + SMALL_BLOCKS + MEDIUM_BLOCKS;
-         i += 3)
-    {
-        if (p[i]) {
-            custom_free(p[i]);
-            p[i] = NULL;
+    for (size_t i = 0; i < SLOTS; i++) {
+        if (blocks[i]) {
+            custom_free(blocks[i]);
+            blocks[i] = NULL;
         }
     }
-
-    // ============================================================
-    // PHASE 7
-    //
-    // Allocate many awkward sizes.
-    //
-    // These produce maximal split leftovers.
-    // ============================================================
-
-    for (int i = 0; i < FINAL_BLOCKS; i++) {
-        p[300 + i] = custom_malloc(rsize(17, 29));
-    }
-
-    // ============================================================
-    // PHASE 8
-    //
-    // FINAL SHAPING PASS
-    //
-    // This determines the FINAL HEAP STATE ONLY.
-    //
-    // We intentionally leave:
-    //
-    // - stranded tiny holes
-    // - fragmented front region
-    // - isolated unusable gaps
-    // - interleaved live/free blocks
-    //
-    // FIRST-FIT ends with:
-    //   massive checkerboarding near heap front.
-    //
-    // BEST-FIT ends with:
-    //   visibly denser packing and larger contiguous holes.
-    // ============================================================
-
-    for (int i = 300; i < 300 + FINAL_BLOCKS; i += 4) {
-        custom_free(p[i]);
-        p[i] = NULL;
-    }
-
-    for (int i = 20; i < 80; i += 5) {
-        if (p[i]) {
-            custom_free(p[i]);
-            p[i] = NULL;
-        }
-    }
-
-    // intentionally leave dirty heap
 }
