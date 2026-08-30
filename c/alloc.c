@@ -5,56 +5,67 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include "find.h"
 
 struct block_meta *base = NULL;
 size_t heap_usage = 0;
 size_t used_memory = 0;
-enum Strategy strategy = FIRST;
 
-// Function which actually finds a free block.
-static struct block_meta *first_find(size_t size) {
+static double external_fragmentation(void) {
+  size_t total_free = 0;
+  size_t largest_free = 0;
+
   struct block_meta *current = base;
 
   while (current) {
-    // First-fit allocation. It goes through each block
-    // meta, and then returns when it finds a block that's
-    // big enough.
-    if (current->free && current->size >= size) return current;
-    current = current->next;
-  }
+    if (current->free) {
+      total_free += current->size;
 
-  return NULL;
-}
-
-static struct block_meta *best_find(size_t size) {
-  struct block_meta *current = base;
-  struct block_meta *best = NULL;
-
-  while (current) {
-    if (current->free && current->size >= size) {
-      if (best == NULL || current->size < best->size) best = current;
+      if (current->size > largest_free)
+        largest_free = current->size;
     }
 
     current = current->next;
   }
 
-  return best;
+  if (total_free == 0)
+    return 0.0;
+
+  return 1.0 - (double)largest_free / (double)total_free;
 }
 
-static struct block_meta *find(size_t size) {
-  struct block_meta *block;
-  if (strategy == FIRST) {
-    block = first_find(size);
-  } else {
-    block = best_find(size);
+static size_t internal_fragmentation(void) {
+  size_t total = 0;
+  struct block_meta *current = base;
+
+  while (current) {
+    if (!current->free) {
+      total += current->size - current->used;
+    }
+
+    current = current->next;
   }
 
-  return block;
+  return total;
+}
+
+static size_t free_block_count(void) {
+  size_t count = 0;
+  struct block_meta *current = base;
+
+  while (current) {
+    if (current->free)
+      count++;
+
+    current = current->next;
+  }
+
+  return count;
 }
 
 // Log current allocator state as CSV.
 static void log_memory(void) {
-  printf("%zu,%zu\n", used_memory, heap_usage);
+  printf("%zu,%zu,%zu,%.6f,%zu\n", used_memory, heap_usage, free_block_count(), external_fragmentation(), internal_fragmentation());
   fflush(stdout);
 }
 
@@ -184,6 +195,9 @@ static void coalesce(struct block_meta *block) {
     if (block->next && block->next->free) {
       struct block_meta *next = block->next;
 
+      if (next_cursor == next)
+        next_cursor = block;
+
       block->size += META_SIZE + next->size;
       block->next = next->next;
       strcpy(block->magic, "merged_next");
@@ -193,6 +207,9 @@ static void coalesce(struct block_meta *block) {
     // Merge with previous block if free
     struct block_meta *prev = find_previous(block);
     if (prev && prev->free) {
+      if (next_cursor == block)
+        next_cursor = prev;
+
       prev->size += META_SIZE + block->size;
       prev->next = block->next;
       strcpy(prev->magic, "merged_prev");

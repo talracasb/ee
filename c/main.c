@@ -2,6 +2,7 @@
 #include "test.h"
 #include <math.h>
 #include <stdio.h>
+#include "find.h"
 #include <string.h>
 
 static void log_block(struct block_meta *b, const char *event) {
@@ -58,13 +59,17 @@ int main(int argc, char **argv) {
     strategy = FIRST;
   } else if (strcmp(argv[2], "best") == 0) {
     strategy = BEST;
+  } else if (strcmp(argv[2], "worst") == 0) {
+    strategy = WORST;
+  } else if (strcmp(argv[2], "next") == 0) {
+    strategy = NEXT;
   }
 
   if (strcmp(argv[1], "map") == 0) {
     test();
     log_memory_map();
   } else if (strcmp(argv[1], "usage") == 0) {
-    printf("used_memory,heap_memory\n");
+    printf("used_memory,heap_memory,free_blocks,external_fragmentation,internal_fragmentation\n");
     test();
   } else {
     printf("error: please select 'map'\n");
