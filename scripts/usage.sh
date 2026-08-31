@@ -15,5 +15,8 @@ echo "next"
 ./main usage next > ../data/usage/next.csv
 echo "done!"
 echo "rendering image..."
-cd ../python
-python usage.py ../data/usage "$1"
+cd ..
+python python/usage.py ./data/usage "heap_memory"
+python python/usage.py ./data/usage "internal_fragmentation"
+python python/usage.py ./data/usage "external_fragmentation"
+python python/usage.py ./data/usage "free_blocks"

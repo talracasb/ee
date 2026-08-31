@@ -19,7 +19,10 @@ struct block_meta {
 };
 
 #define META_SIZE sizeof(struct block_meta)
+
+// Internal state exposed for debugging & logging purposes.
 extern struct block_meta *base;
+extern bool log_operations;
 
 // The basic allocator API. There's more, but it's just
 // convenience.

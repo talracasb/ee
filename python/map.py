@@ -79,6 +79,4 @@ if __name__ == "__main__":
 
         total += block["size"]
     
-    print(f"Fragmentation: {fragmentation}/{total}, {fragmentation/total * 100}%")
-    print(f"Small Fragments: {small_fractions}/{total}, {small_fractions/total * 100}%")
     

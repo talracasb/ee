@@ -3,8 +3,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define SLOTS 518
-#define OPERATIONS 40000
+#define SLOTS 256
+#define OPERATIONS 20000
 
 static void *blocks[SLOTS];
 

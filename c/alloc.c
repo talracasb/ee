@@ -8,6 +8,7 @@
 #include "find.h"
 
 struct block_meta *base = NULL;
+bool log_operations = false;
 size_t heap_usage = 0;
 size_t used_memory = 0;
 
@@ -65,6 +66,9 @@ static size_t free_block_count(void) {
 
 // Log current allocator state as CSV.
 static void log_memory(void) {
+  if (!log_operations)
+    return;
+
   printf("%zu,%zu,%zu,%.6f,%zu\n", used_memory, heap_usage, free_block_count(), external_fragmentation(), internal_fragmentation());
   fflush(stdout);
 }

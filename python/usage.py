@@ -70,7 +70,7 @@ if not csv_files:
 
 config = COLUMNS[args.column]
 
-plt.figure(figsize=(12, 6))
+fig = plt.figure(figsize=(12, 6))
 
 for csv_file in csv_files:
     trial = read_memory(csv_file, args.column)
@@ -88,4 +88,11 @@ plt.legend()
 plt.grid(True)
 
 plt.tight_layout()
-plt.show()
+path = Path("graphs/")
+path.mkdir(parents=True, exist_ok=True)
+
+fig.savefig(
+    path / f"{args.column}.svg",
+    dpi=300,
+    bbox_inches="tight",
+)

@@ -69,6 +69,7 @@ int main(int argc, char **argv) {
     test();
     log_memory_map();
   } else if (strcmp(argv[1], "usage") == 0) {
+    log_operations = true;
     printf("used_memory,heap_memory,free_blocks,external_fragmentation,internal_fragmentation\n");
     test();
   } else {
